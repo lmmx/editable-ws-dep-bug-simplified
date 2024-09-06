@@ -1,0 +1,29 @@
+[build-system]
+build-backend = "pdm.backend"
+requires = ["pdm-backend"]
+
+[project]
+authors = [
+    {email = "louismmx@gmail.com", name = "Louis Maddox"},
+]
+dependencies = [
+    "demo-cli",
+]
+description = "Possible uv workspace editable dep bug"
+license = {text = "MIT"}
+name = "ws_editable_dep_repro"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+version = "0.0.1"
+
+[project.urls]
+Homepage = "https://github.com/lmmx/uv-ws-editable-dep-repro"
+Repository = "https://github.com/lmmx/uv-ws-editable-dep-repro.git"
+
+[tool.uv.workspace]
+members = [
+    "packages/*",
+]
+
+[tool.uv.sources]
+demo-cli = { workspace = true }
