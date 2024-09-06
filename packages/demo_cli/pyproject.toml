@@ -1,3 +1,7 @@
+[build-system]
+build-backend = "pdm.backend"
+requires = ["pdm-backend"]
+
 [project]
 dependencies = []
 description = "Simplified demo of uv workspace editable deps bug"
