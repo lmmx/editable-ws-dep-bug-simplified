@@ -1,110 +1,45 @@
-# emptypt
+# 
 
-Template for an entrypoint CLI using msgspec
+Minimal repro demo of a bug where `uv pip install -e .` on the workspace root does not produce
+editable dependencies.
 
-## Workspace setup
-
-This repo has been refactored as a [uv workspace][uvws] in August 2024.
-
-Each CLI is a standalone package, and there's also a package called `emptypt` (all in the
-`msgspec_packages` subdirectory).
-
-To install all CLI packages (each of which exposes entrypoints in its `pyproject.toml`
-project scripts section) and therefore to obtain all CLI commands, run:
-
-```sh
-uv pip install .
-```
-
-[uvws]: https://docs.astral.sh/uv/concepts/workspaces/
-
-## Timing Benchmarks
-
-Desktop (3.7 GHz, max. 5.3 GHz, 20 cores)
-
-| Configuration              |   Execution Time | entrypoint        |  Autogenerate from config  |
-|:---------------------------|-----------------:|:------------------|:--------------------------:|
-| Stdlib [baseline]          |           0.014s | emptypt-m-minimum |             -              |
-| msgspec                    |           0.014s | emptypt-m-simple  |             -              |
-| msgspec + argh (docstring) |           0.054s | emptypt-m-argh    |            Yes             |
-| msgspec + click            |           0.067s | emptypt-m-click   |             -              |
-| msgspec + typer            |           0.088s | emptypt-m-typer   |             -              |
-| msgspec + defopt           |           0.162s | emptypt-m-defopt  |            Yes             |
-
-Laptop: ThinkPad P14s (2.2 GHz, max. 5 GHz, 16 cores)
-
-| Configuration              |   Execution Time | entrypoint        |  Autogenerate from config  |
-|:---------------------------|-----------------:|:------------------|:--------------------------:|
-| Stdlib [baseline]          |           0.018s | emptypt-m-minimum |             -              |
-| msgspec                    |           0.018s | emptypt-m-simple  |             -              |
-| msgspec + argh (docstring) |           0.066s | emptypt-m-argh    |            Yes             |
-| msgspec + click            |           0.077s | emptypt-m-click   |             -              |
-| msgspec + typer            |           0.236s | emptypt-m-typer   |             -              |
-| msgspec + defopt           |           0.176s | emptypt-m-defopt  |            Yes             |
-
-Laptop: GPD Win Max 2 2023 (3.3 GHz, max. 5.1 GHz)
-
-| Configuration              |   Execution Time | entrypoint        |  Autogenerate from config  |
-|:---------------------------|-----------------:|:------------------|:--------------------------:|
-| Stdlib [baseline]          |           0.020s | emptypt-m-minimum |             -              |
-| msgspec                    |           0.021s | emptypt-m-simple  |             -              |
-| msgspec + argh (docstring) |           0.109s | emptypt-m-argh    |            Yes             |
-| msgspec + click            |           0.124s | emptypt-m-click   |             -              |
-| msgspec + typer            |           0.411s | emptypt-m-typer   |             -              |
-| msgspec + defopt           |           0.234s | emptypt-m-defopt  |            Yes             |
-
-Laptop: Lenovo IdeaPad Flex 3 (1.1 GHz, max. 3.1 GHz)
-
-| Configuration              |   Execution Time | entrypoint        |  Autogenerate from config  |
-|:---------------------------|-----------------:|:------------------|:--------------------------:|
-| Stdlib [baseline]          |           0.036s | emptypt-m-minimum |             -              |
-| msgspec                    |           0.038s | emptypt-m-simple  |             -              |
-| msgspec + argh (docstring) |           0.147s | emptypt-m-argh    |            Yes             |
-| msgspec + click            |           0.183s | emptypt-m-click   |             -              |
-| msgspec + typer            |           0.242s | emptypt-m-typer   |             -              |
-| msgspec + defopt           |           0.454s | emptypt-m-defopt  |            Yes             |
-
-## Details
-
-- `argh.dispatch_command` autogenerates nice simple CLIs from `msgspec.Struct`s, very fast
-- `click` can't annotate classes and requires doubling the documentation of config fields as CLI flags
-- `typer.run` exits early and the decorator didn't get invoked in the entrypoint (fail)
-- `defopt.run` autogenerates nice CLIs from Pydantic models but the ones for msgspec Structs
-  interpret all fields as positional CLI args by default
-
-## Example usage
-
-The `argh` CLI reads flag type hints and descriptions from `msgspec.Struct` field metadata.
+This repro repo has a virtual workspace root named `ws_editable_dep_repro` and one package:
 
 ```
-usage: emptypt-argh [-h] [-i] [-f] [-q] [-d] [-u]
-
-Configure input filtering and output display.
-
-options:
-  -h, --help          show this help message and exit
-  -i, --io-arg1       Example IO flag (type: bool, default: False)
-  -f, --filter-arg1   Example filter flag (type: bool, default: False)
-  -q, --quiet         Run silently (type: bool, default: False)
-  -d, --debug         Run debug diagnostics (type: bool, default: False)
-  -u, --undocumented  (type: bool, default: False)
+packages/
+└── demo_cli
+    ├── pyproject.toml
+    ├── README.md
+    └── src
+        └── demo_cli
+            ├── __init__.py
+            └── main.py
 ```
 
-The 2nd `argh` CLI (docstring variant) handles field descriptions from the class docstring, like defopt.
-This is a more scalable way to write field descriptions.
+- This package named `demo_cli` exposes an entrypoint in its `pyproject.toml` named `repro-demo-entrypoint`
+- The `repro-demo-entrypoint` entrypoint points to the `demo_cli.main:run_cli` function.
+- The `run_cli` function source code is just an `assert False`.
+- If you run the CLI, it throws the `AssertionError`
+- If you go and edit the CLI to remove the bug, and re-run the entrypoint, it still throws, the dep
+  was not edited to reflect your changes:
 
 ```
-usage: emptypt-argh-docstr [-h] [-i] [-f] [-q] [-d] [-u]
-
-Configure input filtering and output display.
-
-options:
-  -h, --help          show this help message and exit
-  -i, --io-arg1       Example IO flag with a description that can go on and
-                      become split over multiple lines in the docstring.
-                      (type: bool, default: False)
-  -f, --filter-arg1   Example filter flag (type: bool, default: False)
-  -q, --quiet         Run silently (type: bool, default: False)
-  -d, --debug         Run debug diagnostics (type: bool, default: False)
-  -u, --undocumented  (type: bool, default: False)
+(uv-ws-edit-dep-repro) louis 🚶 ~/lab/uv/editable-ws-dep-bug-simplified $ vim
+packages/demo_cli/src/demo_cli/main.py 
+(uv-ws-edit-dep-repro) louis 🚶 ~/lab/uv/editable-ws-dep-bug-simplified $ cat
+packages/demo_cli/src/demo_cli/main.py 
+def run_cli() -> None:
+    assert True
+(uv-ws-edit-dep-repro) louis 🚶 ~/lab/uv/editable-ws-dep-bug-simplified $ repro-demo-entrypoint 
+Traceback (most recent call last):
+  File "/home/louis/miniconda3/envs/uv-ws-edit-dep-repro/bin/repro-demo-entrypoint", line 8, in
+<module>
+    sys.exit(run_cli())
+             ^^^^^^^^^
+  File
+"/home/louis/miniconda3/envs/uv-ws-edit-dep-repro/lib/python3.12/site-packages/demo_cli/main.py",
+line 2, in run_cli
+    assert False
+           ^^^^^
+AssertionError
 ```
