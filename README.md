@@ -24,13 +24,10 @@ packages/
   was not edited to reflect your changes:
 
 ```
-(uv-ws-edit-dep-repro) louis 🚶 ~/lab/uv/editable-ws-dep-bug-simplified $ vim
-packages/demo_cli/src/demo_cli/main.py 
-(uv-ws-edit-dep-repro) louis 🚶 ~/lab/uv/editable-ws-dep-bug-simplified $ cat
-packages/demo_cli/src/demo_cli/main.py 
+$ ~/lab/uv/editable-ws-dep-bug-simplified $ cat packages/demo_cli/src/demo_cli/main.py 
 def run_cli() -> None:
     assert True
-(uv-ws-edit-dep-repro) louis 🚶 ~/lab/uv/editable-ws-dep-bug-simplified $ repro-demo-entrypoint 
+$ ~/lab/uv/editable-ws-dep-bug-simplified $ repro-demo-entrypoint 
 Traceback (most recent call last):
   File "/home/louis/miniconda3/envs/uv-ws-edit-dep-repro/bin/repro-demo-entrypoint", line 8, in
 <module>
@@ -42,4 +39,13 @@ line 2, in run_cli
     assert False
            ^^^^^
 AssertionError
+```
+
+## Environment
+
+This was done in a conda env:
+
+```sh
+conda create -n uv-ws-edit-dep-repro python=3.12 -y
+conda activate uv-ws-edit-dep-repro
 ```
